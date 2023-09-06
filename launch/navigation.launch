@@ -1,0 +1,17 @@
+<launch>
+    <!-- 启动AMCL节点
+    <include file="$(find webots_ros)/launch/amcl.launch" />-->
+    <include file="$(find webots_ros)/launch/gmapping.launch" />
+    <!-- 运行move_base节点 -->
+    <include file="$(find webots_ros)/launch/move_base.launch" />
+    <node pkg="webots_ros" type="speed_ctrl.py" name="speed_ctrl" output="screen">
+    </node>
+    <node pkg="webots_ros" type="yt_enable.py" name="yt_enable" output="screen">
+    </node>
+    <!--
+    <node pkg="webots_ros" type="yt_position.py" name="yt_position" output="screen">
+    </node>
+    -->
+    <include file="$(find webots_ros)/launch/recommand.launch" />
+
+</launch>

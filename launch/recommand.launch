@@ -1,0 +1,11 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+    <node pkg="webots_ros" type="gpsback.py" name="gpsback" output="screen">
+    </node>
+    <node pkg="webots_ros" type="laser.py" name="laser" output="screen">
+    </node>
+    <node pkg="webots_ros" type="gpsfront.py" name="gpsfront" output="screen">
+    </node>
+    <node pkg="webots_ros" type="motor.py" name="motor" output="screen">
+    </node>
+</launch>
