@@ -5,6 +5,7 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "tf/transform_listener.h"
+#include "lebai_demo.h"
 
 
 // 全局变量用于存储TransformListener
@@ -155,12 +156,11 @@ int main(int argc, char** argv)
 {
     ros::init(argc, argv, "image");
     ros::NodeHandle nh;
-    
-    // 创建TransformListener
+
     listener = new tf::TransformListener();
     ros::Publisher target_pub = nh.advertise<geometry_msgs::PoseStamped>("/target_position", 10);
     system("rosservice call /io_service/set_gripper_position '{val: 100}'");
-
+    system("rosservice call /move_joint \"{is_joint_pose: 0, cartesian_pose: {position: {x: -0.027628,y: -0.526908,z: 0.413639}, orientation: {x: 0.903681, y: 0.041240,z: 0.054269, w: 0.422746}}, common: {vel: 0.1, acc: 0.1, time: 0.0, radius: 0.0}}\"");
     // 订阅RGB图像消息
     ros::Subscriber rgb_sub = nh.subscribe<sensor_msgs::Image>("/camera/color/image_raw", 1, boost::bind(imageCallback, _1, "/camera/color/image_raw", &target_pub));
 
