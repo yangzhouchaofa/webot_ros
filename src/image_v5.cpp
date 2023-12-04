@@ -5,31 +5,23 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "tf/transform_listener.h"
-#include "include/lebai_demo.h"
-#include "std_msgs/Bool.h"
-#include "include/wait.h"
+#include "lebai_demo.h"
 
 
 // 全局变量用于存储TransformListener
 tf::TransformListener* listener;
 // 添加一个标志，表示是否已经收到了RGB图像
 bool received_rgb = false;
-bool near_car = false;
 sensor_msgs::Image::ConstPtr rgb_msg;
 sensor_msgs::Image::ConstPtr depth_msg;
-std_msgs::Bool flag_msg;
 
 // 相机内参
-const double fx = 606.31005859375;  
-const double fy = 606.111572265625;  
-const double cx = 324.8408508300781; 
-const double cy = 248.92527770996094;                    
+const double fx = 606.31005859375;  // 以实际值替换
+const double fy = 606.111572265625;  // 以实际值替换
+const double cx = 324.8408508300781;  // 以实际值替换
+const double cy = 248.92527770996094;  // 以实际值替换                    
 
-void NearCallback(const std_msgs::Bool::ConstPtr& msg)
-{
-    near_car = msg->data;
-}
-void imageCallback(const sensor_msgs::Image::ConstPtr& msg, const std::string& topic, ros::Publisher *target_pub, ros::Publisher *target_find)
+void imageCallback(const sensor_msgs::Image::ConstPtr& msg, const std::string& topic, ros::Publisher *target_pub)
 {
     if (topic == "/camera/color/image_raw")
     {
@@ -66,55 +58,47 @@ void imageCallback(const sensor_msgs::Image::ConstPtr& msg, const std::string& t
                 // 查找轮廓
                 std::vector<std::vector<cv::Point>> contours;
                 cv::findContours(mask, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-                // ROS_INFO("-----------------------------------------------------------------");
+                ROS_INFO("-----------------------------------------------------------------");
 
                 float x=0,  y=0, i=0;
 
                 if (contours.empty())
                 {
-                    if(near_car)
-                    {
-                        // system("rosservice call /move_joint \"{is_joint_pose: 0, cartesian_pose: {position: {x: 0,y: -0.5,z: 0.3}, orientation: {x: -1, y: 0,z: 0, w: 0}}, common: {vel: 0.1, acc: 0.1, time: 0.0, radius: 0.0}}\"");
-                        sleep(10);
-                    }
-                    else
-                    {
-                        ROS_WARN("No contours found.");
-                        flag_msg.data = false;  // 设置为 true 或 false，表示需要发布的标志位
-                        target_find->publish(flag_msg);
-                    }
+                    ROS_WARN("No contours found.");
                 } 
                 else
                 {
-                    double max_area = 0;
-                    int max_area_index = -1;
-                    for (int i = 0; i < contours.size(); ++i)
+                    for (const auto& contour : contours) 
                     {
-                        double area = cv::contourArea(contours[i]);
-                        if (area > max_area)
+                        // 计算轮廓的最小外接矩形
+                        cv::RotatedRect boundingBox = cv::minAreaRect(contour);
+
+                        if (cv::contourArea(contour) >= 10) 
                         {
-                            max_area = area;
-                            max_area_index = i;
+                            //获取矩形的中心坐标
+                            cv::Point2f center = boundingBox.center;
+                            cv::drawContours(cv_ptr_rgb->image, std::vector<std::vector<cv::Point>>{contour}, 0, cv::Scalar(0, 255, 0), 2);
+                            x += center.x;
+                            y += center.y;
+                            ROS_INFO("Block Center: (%f, %f)", center.x, center.y);
+                            i++;
                         }
                     }
 
-                    if(max_area_index != -1)
+                    if(i >= 1)
                     {
-                        // 计算最大轮廓的最小外接矩形
-                        cv::RotatedRect boundingBox = cv::minAreaRect(contours[max_area_index]);
-                        // 获取矩形的中心坐标
-                        cv::Point2f center = boundingBox.center;
-                        int x = static_cast<int>(center.x);
-                        int y = static_cast<int>(center.y);
+                        x = x/i;
+                        y = y/i;          
+
                         // 获取深度值
                         float depth_value = cv_ptr_depth->image.at<float>(y, x);
-                        // ROS_INFO("矩形的中心坐标: (%d, %d),深度值: (%f)",x, y, depth_value);
+                        ROS_INFO("矩形的中心坐标: (%f, %f),深度值: (%f)",x, y, depth_value);
 
                         // 计算相机坐标系下的坐标
                         double camera_x = (x - cx) * depth_value / fx;
                         double camera_y = (y - cy) * depth_value / fy;
                         double camera_z = depth_value;
-                        // ROS_INFO("相机坐标系下的坐标: (%f, %f, %f)", camera_x, camera_y, camera_z);
+                        ROS_INFO("相机坐标系下的坐标: (%f, %f, %f)", camera_x, camera_y, camera_z);
 
                         // 将点从相机坐标系转换到机器人坐标系
                         tf::StampedTransform transform;
@@ -136,7 +120,7 @@ void imageCallback(const sensor_msgs::Image::ConstPtr& msg, const std::string& t
                         tf::Vector3 point_robot = transform * point_camera;
 
                         // 输出中心坐标和深度值
-                        // ROS_INFO("机器人坐标系: (%f, %f, %f)", point_robot.x(), point_robot.y(), point_robot.z());
+                        ROS_INFO("机器人坐标系: (%f, %f, %f)", point_robot.x(), point_robot.y(), point_robot.z());
 
                         // 处理完毕后，重置标志
                         received_rgb = false;
@@ -174,18 +158,17 @@ int main(int argc, char** argv)
     ros::NodeHandle nh;
 
     listener = new tf::TransformListener();
-    ros::Publisher target_find = nh.advertise<std_msgs::Bool>("/target_find", 10);
     ros::Publisher target_pub = nh.advertise<geometry_msgs::PoseStamped>("/target_position", 10);
-    system("rosservice call /system_service/enable '{}' "); //启动机械臂
     system("rosservice call /io_service/set_gripper_position '{val: 100}'");
-    system("rosservice call /move_joint \"{is_joint_pose: 0, cartesian_pose: {position: {x: -0.121547,y: 0.008318,z: 0.421518}, orientation: {x: 0.924148, y: 0.012173,z: -0.025137, w: 0.381012}}, common: {vel: 0.2, acc: 0.1, time: 0.0, radius: 0.0}}\"");
+    system("rosservice call /move_joint \"{is_joint_pose: 0, cartesian_pose: {position: {x: -0.027628,y: -0.526908,z: 0.413639}, orientation: {x: 0.903681, y: 0.041240,z: 0.054269, w: 0.422746}}, common: {vel: 0.1, acc: 0.1, time: 0.0, radius: 0.0}}\"");
+    // 订阅RGB图像消息
+    ros::Subscriber rgb_sub = nh.subscribe<sensor_msgs::Image>("/camera/color/image_raw", 1, boost::bind(imageCallback, _1, "/camera/color/image_raw", &target_pub));
 
-    wait_for_sleep(15);
-
-    ros::Subscriber rgb_sub = nh.subscribe<sensor_msgs::Image>("/camera/color/image_raw", 1, boost::bind(imageCallback, _1, "/camera/color/image_raw", &target_pub, &target_find));
-    ros::Subscriber depth_sub = nh.subscribe<sensor_msgs::Image>("/camera/aligned_depth_to_color/image_raw", 1, boost::bind(imageCallback, _1, "/camera/aligned_depth_to_color/image_raw", &target_pub, &target_find));
-    ros::Subscriber near_sub = nh.subscribe<std_msgs::Bool>("/near_car", 1, NearCallback);
+    // 订阅深度图像消息
+    ros::Subscriber depth_sub = nh.subscribe<sensor_msgs::Image>("/camera/aligned_depth_to_color/image_raw", 1, boost::bind(imageCallback, _1, "/camera/aligned_depth_to_color/image_raw", &target_pub));
+    
     ros::spin();
+
     return 0;
 }
 
@@ -195,4 +178,3 @@ int main(int argc, char** argv)
 // height: 480
 // width: 640
 // K: [606.31005859375, 0.0, 324.8408508300781, 0.0, 606.111572265625, 248.92527770996094, 0.0, 0.0, 1.0]
-//  system("rosservice call /move_joint \"{is_joint_pose: 0, cartesian_pose: {position: {x: -0.121547,y: 0.008318,z: 0.421518}, orientation: {x: 0.924148, y: 0.012173,z: -0.025137, w: 0.381012}}, common: {vel: 0.1, acc: 0.1, time: 0.0, radius: 0.0}}\"");

@@ -1,19 +1,52 @@
-#include "lebai_demo.h"
+// #include "lebai_demo.h"
+#include "std_msgs/Bool.h"
+#include <move_base_msgs/MoveBaseActionResult.h>
+#include "include/wait.h"
+
+bool move_flag = false;
+
+
+void callback(const std_msgs::Bool::ConstPtr& msg)
+{
+    if(!move_flag)
+    {
+        move_flag = true;
+        system("rosrun webots_ros move");
+    }
+}
+
+void resultCallback(const move_base_msgs::MoveBaseActionResult::ConstPtr& result_msg) {
+    // 获取规划结果的状态
+    if(move_flag)
+    {
+        int status = result_msg->status.status;
+
+        // 根据状态判断规划是否成功
+        if (status == 3)
+        {
+            ROS_INFO("Goal reached successfully!");
+            system("rosservice call /move_joint \"{is_joint_pose: 0, cartesian_pose: {position: {x: 0.58,y: -0.08,z: 0.35}, orientation: {x: 0.5, y: 0.5,z: 0.5, w: 0.5}}, common: {vel: 0.1, acc: 0.1, time: 0.0, radius: 0.0}}\"");
+            wait_for_sleep(15);
+        } 
+        else 
+        {
+            ROS_INFO("wait to reach the goal. Status: %d", status);
+        }
+    }
+}
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "put"); //初始化ros节点
     ros::NodeHandle n; //Create a node handle //创建节点句柄
-    ros::AsyncSpinner spinner(1); //异步启停，开启指定数量的Spinner线程并发执行Callback队列中的可用回调。
-    spinner.start();
-    system("rosservice call /system_service/enable '{}' "); //启动机械臂
-    moveit::planning_interface::MoveGroupInterface arm("manipulator");
-    LeBai lebai(n,arm);
-    lebai.moveJ(-0.3764005358274392, -2.4500549396510976, -0.29279858288767174, -1.8567878699363258, 1.582205308904796, 3.1362237208321933);
-    // lebai.moveJ( -1.3957307693774477, -2.078352219986558, -1.3314953238847365, -0.41896850269126573, 1.570412831597925, 3.231426403480346);
-    sleep(10);
-    system("rosservice call /io_service/set_gripper_position '{val: 100}'");
-	ros::shutdown(); 
-}
+    ros::Subscriber pick_up = n.subscribe<std_msgs::Bool>("/pick", 10, callback);
+    ros::Subscriber result_sub = n.subscribe("/move_base/result", 10, resultCallback);
 
-// [ INFO] [1701138603.837467787]: Transform Translation: (0.490528, -0.225778, 0.500268)
-// [ INFO] [1701138603.851073822]: Transform Rotation: (0.769227, 0.626288, 0.090561, 0.088608)
+    ros::spin(); // 进入ROS事件循环
+
+    return 0;
+}
+// [ INFO] [1701675307.766054857]: Transform Translation: (0.579155, -0.083193, 0.348318)
+// [ INFO] [1701675307.778323304]: Transform Rotation: (0.498582, 0.550727, 0.451455, 0.494272)
+
+

@@ -8,9 +8,6 @@ void transformPoint(tf::TransformListener& listener) {
         listener.waitForTransform("lebai_base_link", "lebai_link_6", ros::Time(0), ros::Duration(3.0));
         listener.lookupTransform("lebai_base_link", "lebai_link_6", ros::Time(0), transform);
 
-        // Process the obtained transform as needed
-
-        // For example, you can get translation and rotation
         tf::Vector3 translation = transform.getOrigin();
         tf::Quaternion rotation = transform.getRotation();
 
