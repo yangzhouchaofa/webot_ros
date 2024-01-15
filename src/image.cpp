@@ -56,8 +56,8 @@ void imageCallback(const sensor_msgs::Image::ConstPtr& msg, const std::string& t
                 cv::cvtColor(cv_ptr_rgb->image, hsv_image, cv::COLOR_BGR2HSV);
 
                 // 定义颜色的范围，这里以红色为例
-                cv::Scalar lower_red(10, 100, 100);
-                cv::Scalar upper_red(40, 255, 255);
+                cv::Scalar lower_red(60, 100, 100);
+                cv::Scalar upper_red(140, 255, 255);
 
                 // 通过颜色范围创建一个二值图像
                 cv::Mat mask;
@@ -72,17 +72,10 @@ void imageCallback(const sensor_msgs::Image::ConstPtr& msg, const std::string& t
 
                 if (contours.empty())
                 {
-                    if(near_car)
-                    {
-                        // system("rosservice call /move_joint \"{is_joint_pose: 0, cartesian_pose: {position: {x: 0,y: -0.5,z: 0.3}, orientation: {x: -1, y: 0,z: 0, w: 0}}, common: {vel: 0.1, acc: 0.1, time: 0.0, radius: 0.0}}\"");
-                        sleep(10);
-                    }
-                    else
-                    {
-                        ROS_WARN("No contours found.");
-                        flag_msg.data = false;  // 设置为 true 或 false，表示需要发布的标志位
-                        target_find->publish(flag_msg);
-                    }
+                    cv::imshow("Received Image", cv_ptr_rgb->image);
+                    ROS_WARN("No contours found.");
+                    flag_msg.data = false;  // 设置为 true 或 false，表示需要发布的标志位
+                    target_find->publish(flag_msg);
                 } 
                 else
                 {
@@ -174,17 +167,16 @@ int main(int argc, char** argv)
     ros::NodeHandle nh;
 
     listener = new tf::TransformListener();
-    ros::Publisher target_find = nh.advertise<std_msgs::Bool>("/target_find", 10);
-    ros::Publisher target_pub = nh.advertise<geometry_msgs::PoseStamped>("/target_position", 10);
     system("rosservice call /system_service/enable '{}' "); //启动机械臂
     system("rosservice call /io_service/set_gripper_position '{val: 100}'");
     system("rosservice call /move_joint \"{is_joint_pose: 0, cartesian_pose: {position: {x: -0.121547,y: 0.008318,z: 0.421518}, orientation: {x: 0.924148, y: 0.012173,z: -0.025137, w: 0.381012}}, common: {vel: 0.2, acc: 0.1, time: 0.0, radius: 0.0}}\"");
 
-    wait_for_sleep(15);
-
+//    wait_for_sleep(12);
+    ros::Publisher target_find = nh.advertise<std_msgs::Bool>("/target_find", 10);
+    ros::Publisher target_pub = nh.advertise<geometry_msgs::PoseStamped>("/target_position", 10);
     ros::Subscriber rgb_sub = nh.subscribe<sensor_msgs::Image>("/camera/color/image_raw", 1, boost::bind(imageCallback, _1, "/camera/color/image_raw", &target_pub, &target_find));
     ros::Subscriber depth_sub = nh.subscribe<sensor_msgs::Image>("/camera/aligned_depth_to_color/image_raw", 1, boost::bind(imageCallback, _1, "/camera/aligned_depth_to_color/image_raw", &target_pub, &target_find));
-    ros::Subscriber near_sub = nh.subscribe<std_msgs::Bool>("/near_car", 1, NearCallback);
+    // ros::Subscriber near_sub = nh.subscribe<std_msgs::Bool>("/near_car", 1, NearCallback);
     ros::spin();
     return 0;
 }
@@ -196,3 +188,6 @@ int main(int argc, char** argv)
 // width: 640
 // K: [606.31005859375, 0.0, 324.8408508300781, 0.0, 606.111572265625, 248.92527770996094, 0.0, 0.0, 1.0]
 //  system("rosservice call /move_joint \"{is_joint_pose: 0, cartesian_pose: {position: {x: -0.121547,y: 0.008318,z: 0.421518}, orientation: {x: 0.924148, y: 0.012173,z: -0.025137, w: 0.381012}}, common: {vel: 0.1, acc: 0.1, time: 0.0, radius: 0.0}}\"");
+
+
+//rosservice call /move_joint "{is_joint_pose: 0, cartesian_pose: {position: {x: -0.11,y: -0.5,z: 0.25}, orientation: {x: 0.5, y: 0,z: 0, w: 0.5}}, common: {vel: 0.1, acc: 0.1, time: 0.0, radius: 0.0}}"

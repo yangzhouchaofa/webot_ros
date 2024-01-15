@@ -19,7 +19,7 @@ class recommand():
         self.PICKLE = pickle_name
         self.value_name = valuename
         self.value = []
-        self.obs = [[3.69, 0.68],[1.88, 1.06],[3.9, 1.07],[1.96, 0.23],[3.17, 1.75]]
+        self.obs = [[3.69, 0.68],[1.88, 1.06],[3.27, 2.02],[1.96, 0.23],[0.73, 1.75]]
         self.done = False
         self.num = 0
         while (os.path.exists(self.PATH%self.num)):

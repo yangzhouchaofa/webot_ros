@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import time
 
 import rospy
 from webots_ros.srv import set_float, set_floatRequest, get_float, get_floatRequest
@@ -63,19 +63,28 @@ class MOTOR_CONTROL():
 
 def main():
     rospy.init_node('speed_ctrl', anonymous=True)
-    motor = MOTOR_CONTROL(Names)
-    motor.init_speed()
+    # motor = MOTOR_CONTROL(Names)
+    # motor.init_speed()
+    pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+    cmd_vel_msg = Twist()
     while not rospy.is_shutdown():
-        sub = rospy.wait_for_message('/cmd_vel', Twist)
-        v = sub.linear.x
-        w = sub.angular.z
-        speeds[1] = ((v - w * 0.199) / (0.1))
-        speeds[0] = ((v + w * 0.199) / (0.1))
-        # speeds[1] = v / (0.1)
-        # speeds[0] = v / (0.1)
-        motor.update_speed(speeds)
-        # print(v, w, speeds)
+        # sub = rospy.wait_for_message('/cmd_vel', Twist)
+        # v = sub.linear.x
+        # w = sub.angular.z
+        # speeds[1] = ((v - w * 0.199) / (0.1))
+        # speeds[0] = ((v + w * 0.199) / (0.1))
+        # # speeds[1] = v / (0.1)
+        # # speeds[0] = v / (0.1)
+        # motor.update_speed(speeds)
+        # # print(v, w, speeds)
 
+        cmd_vel_msg.linear.x = 0.5  # 设置线性速度 (m/s)
+        cmd_vel_msg.angular.z = 0  # 设置角速度 (rad/s)
+        pub.publish(cmd_vel_msg)  # 发布消息
+        time.sleep(1)
+        cmd_vel_msg.linear.x = 0  # 设置线性速度 (m/s)
+        cmd_vel_msg.angular.z = 0  # 设置角速度 (rad/s)
+        pub.publish(cmd_vel_msg)  # 发布消息
 
 if __name__ == '__main__':
     main()

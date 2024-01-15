@@ -1,0 +1,31 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/ylc/webots_ros/devel/include/**",
+        "/opt/ros/melodic/include/**",
+        "/home/ylc/webots_ros/src/lebai-ros-sdk/lebai_driver/include/**",
+        "/home/ylc/webots_ros/src/geometry2/tf2/include/**",
+        "/home/ylc/webots_ros/src/geometry2/tf2_bullet/include/**",
+        "/home/ylc/webots_ros/src/geometry2/tf2_eigen/include/**",
+        "/home/ylc/webots_ros/src/geometry2/tf2_geometry_msgs/include/**",
+        "/home/ylc/webots_ros/src/geometry2/tf2_kdl/include/**",
+        "/home/ylc/webots_ros/src/geometry2/tf2_msgs/include/**",
+        "/home/ylc/webots_ros/src/geometry2/tf2_ros/include/**",
+        "/home/ylc/webots_ros/src/geometry2/tf2_sensor_msgs/include/**",
+        "/home/ylc/webots_ros/src/yt/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}

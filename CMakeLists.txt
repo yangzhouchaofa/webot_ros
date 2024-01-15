@@ -1,11 +1,18 @@
 cmake_policy(SET CMP0054 NEW)
 cmake_minimum_required(VERSION 2.8.3)
+# cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 project(webots_ros)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs sensor_msgs message_generation tf)
+find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs sensor_msgs message_generation tf cv_bridge image_transport lebai_msgs  moveit_core
+moveit_ros_planning_interface cv_bridge)
+
+# list(APPEND CMAKE_PREFIX_PATH "/home/ylc/anaconda3/envs/plastic/lib/python3.9/site-packages/torch/share/cmake")
+# find_package(Torch REQUIRED)
+# include_directories(${TORCH_INCLUDE_DIRS})
+# message(STATUS "TORCH_LIBRARIES: ${TORCH_LIBRARIES}")
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -30,6 +37,7 @@ find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs sensor_msgs messag
     RadarTarget.msg
     RecognitionObject.msg
     StringStamped.msg
+    lidar32.msg
   )
 
 ## Generate services in the 'srv' folder
@@ -142,6 +150,7 @@ find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs sensor_msgs messag
     DEPENDENCIES
     std_msgs
     sensor_msgs
+    lebai_msgs
   )
 
 ###################################
@@ -156,7 +165,7 @@ find_package(catkin REQUIRED COMPONENTS roscpp rospy std_msgs sensor_msgs messag
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES webots_ros
-   CATKIN_DEPENDS roscpp rospy std_msgs sensor_msgs message_runtime tf
+   CATKIN_DEPENDS roscpp rospy std_msgs sensor_msgs message_runtime tf cv_bridge OpenCV lebai_msgs moveit_core moveit_ros_planning_interface
 #  DEPENDS system_lib
 )
 
@@ -166,27 +175,57 @@ catkin_package(
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
 )
 
+add_executable(yolov5 src/yolov5.cpp)
 
-## Instructions for keyboard_teleop node
+target_link_libraries(yolov5
+	# ${TORCH_LIBRARIES}
+  # ${OpenCV_LIBRARIES}
+  ${catkin_LIBRARIES}
+  
+)
 
-add_executable(keyboard_teleop src/keyboard_teleop.cpp)
+add_executable(image_yolo src/image_yolo.cpp)
 
-add_dependencies(keyboard_teleop webots_ros_generate_messages_cpp)
-
-target_link_libraries(keyboard_teleop
+target_link_libraries(image_yolo
 	${catkin_LIBRARIES}
 )
 
+add_executable(vel src/vel.cpp)
 
-#instructions for e_puck_line client
+target_link_libraries(vel
+	${catkin_LIBRARIES}
+)
 
-add_executable(e_puck_line src/e_puck_line.cpp)
+add_executable(near_car src/near_car.cpp)
 
-add_dependencies(e_puck_line webots_ros_generate_messages_cpp)
+target_link_libraries(near_car
+	${catkin_LIBRARIES}
+)
 
-target_link_libraries(e_puck_line
+add_executable(home src/home.cpp)
+
+target_link_libraries(home
+	${catkin_LIBRARIES}
+)
+
+add_executable(put src/put.cpp)
+
+target_link_libraries(put
+	${catkin_LIBRARIES}
+)
+
+add_executable(move src/move.cpp)
+
+target_link_libraries(move
+	${catkin_LIBRARIES}
+)
+
+add_executable(lookup src/lookup.cpp)
+
+target_link_libraries(lookup
 	${catkin_LIBRARIES}
 )
 
@@ -200,43 +239,10 @@ target_link_libraries(complete_test
 	${catkin_LIBRARIES}
 )
 
-#instructions for robot_information_parser node
 
-add_executable(robot_information_parser src/robot_information_parser.cpp)
+add_executable(go_to_position src/go_to_position.cpp)
 
-add_dependencies(robot_information_parser webots_ros_generate_messages_cpp)
-
-target_link_libraries(robot_information_parser
-	${catkin_LIBRARIES}
-)
-
-#instructions for catch_the_bird node
-
-add_executable(catch_the_bird src/catch_the_bird.cpp)
-
-add_dependencies(catch_the_bird webots_ros_generate_messages_cpp)
-
-target_link_libraries(catch_the_bird
-	${catkin_LIBRARIES}
-)
-
-#instructions for panoramic_view_recorder node
-
-add_executable(panoramic_view_recorder src/panoramic_view_recorder.cpp)
-
-add_dependencies(panoramic_view_recorder webots_ros_generate_messages_cpp)
-
-target_link_libraries(panoramic_view_recorder
-	${catkin_LIBRARIES}
-)
-
-#instructions for pioneer3at node
-
-add_executable(pioneer3at src/pioneer3at.cpp)
-
-add_dependencies(pioneer3at webots_ros_generate_messages_cpp)
-
-target_link_libraries(pioneer3at
+target_link_libraries(go_to_position
 	${catkin_LIBRARIES}
 )
 
@@ -245,36 +251,23 @@ target_link_libraries(pioneer3at
 ## Install ##
 #############
 
-install(TARGETS keyboard_teleop
-        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-
-install(TARGETS e_puck_line
-        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-
 install(TARGETS complete_test
-        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-
-install(TARGETS robot_information_parser
-        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-
-install(TARGETS catch_the_bird
-        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-
-install(TARGETS panoramic_view_recorder
-        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
-
-install(TARGETS pioneer3at
         RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 install(DIRECTORY launch
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
-add_executable(my_controller src/my_controller.cpp)
-add_dependencies(my_controller webots_ros_generate_messages_cpp)
-target_link_libraries(my_controller	${catkin_LIBRARIES})
+add_executable(image src/image.cpp)
+# add_dependencies(webots_ros webots_ros_generate_messages_cpp)
+target_link_libraries(image
+  ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
+  opencv_highgui
+  )
 
 # catkin_install_python(PROGRAMS
 #   scripts/yt_speed.py
 #   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
+
 

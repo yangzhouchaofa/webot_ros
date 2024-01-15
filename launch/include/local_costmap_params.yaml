@@ -2,7 +2,7 @@
 
 #局部代价地图参数命名空间
 local_costmap:
-  inflation_radius: 0.3
+  inflation_radius: 0.45
   #代价地图的TF参考坐标系
   global_frame: map
   #机器人的TF坐标名称

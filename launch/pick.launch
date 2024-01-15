@@ -1,0 +1,6 @@
+<launch>
+    <node pkg="webots_ros" type="image_yolo" name="image_yolo" output="screen" />
+    <node pkg="webots_ros" type="go_to_position" name="go_to_position" output="screen" />
+    <node pkg="webots_ros" type="near_car" name="near_car" output="screen" />
+    <node pkg="webots_ros" type="put" name="put" output="screen" />
+</launch>
